@@ -1,19 +1,23 @@
 @page
 @model IndexModel
 @{
-    ViewData["Title"] = "Dashboard";
+    ViewData["Title"] = "Gestión de Estudiantes";
 }
-
-<div class="row mb-4">
+<!-- Encabezado con Botón de Acción -->
+<div class="row align-items-center mb-4">
     <div class="col-md-8">
         <h2 class="fw-bold text-primary mb-1">
-            <i class="bi bi-speedometer2 me-2"></i>Panel de Control Académico
+            <i class="bi bi-mortarboard-fill me-2"></i>Portal Académico ITLA
         </h2>
-        <p class="text-secondary">Monitoreo y administración de estudiantes matriculados en Programación III</p>
+        <p class="text-secondary mb-0">Gestión completa de estudiantes y calificaciones (CRUD Funcional)</p>
+    </div>
+    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+        <button class="btn btn-primary btn-lg shadow-sm" onclick="abrirModalCrear()">
+            <i class="bi bi-person-plus-fill me-2"></i>Nuevo Estudiante
+        </button>
     </div>
 </div>
-
-<!-- Tarjetas de Métricas del Dashboard -->
+<!-- Tarjetas de Métricas Dinámicas -->
 <div class="row g-3 mb-4">
     <div class="col-sm-6 col-xl-3">
         <div class="card border-0 shadow-sm rounded-3 bg-white border-start border-primary border-4">
@@ -21,7 +25,7 @@
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
                         <span class="text-muted text-uppercase fw-semibold small">Total Estudiantes</span>
-                        <h3 class="fw-bold text-dark mt-1 mb-0">@Model.TotalEstudiantes</h3>
+                        <h3 class="fw-bold text-dark mt-1 mb-0" id="cardTotal">0</h3>
                     </div>
                     <div class="bg-primary bg-opacity-10 text-primary p-3 rounded-circle">
                         <i class="bi bi-people-fill fs-4"></i>
@@ -30,14 +34,13 @@
             </div>
         </div>
     </div>
-
     <div class="col-sm-6 col-xl-3">
         <div class="card border-0 shadow-sm rounded-3 bg-white border-start border-success border-4">
             <div class="card-body">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
                         <span class="text-muted text-uppercase fw-semibold small">Aprobados</span>
-                        <h3 class="fw-bold text-success mt-1 mb-0">@Model.EstudiantesAprobados</h3>
+                        <h3 class="fw-bold text-success mt-1 mb-0" id="cardAprobados">0</h3>
                     </div>
                     <div class="bg-success bg-opacity-10 text-success p-3 rounded-circle">
                         <i class="bi bi-check-circle-fill fs-4"></i>
@@ -46,14 +49,13 @@
             </div>
         </div>
     </div>
-
     <div class="col-sm-6 col-xl-3">
         <div class="card border-0 shadow-sm rounded-3 bg-white border-start border-danger border-4">
             <div class="card-body">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
                         <span class="text-muted text-uppercase fw-semibold small">En Riesgo</span>
-                        <h3 class="fw-bold text-danger mt-1 mb-0">@Model.EstudiantesReprobados</h3>
+                        <h3 class="fw-bold text-danger mt-1 mb-0" id="cardReprobados">0</h3>
                     </div>
                     <div class="bg-danger bg-opacity-10 text-danger p-3 rounded-circle">
                         <i class="bi bi-exclamation-triangle-fill fs-4"></i>
@@ -62,14 +64,13 @@
             </div>
         </div>
     </div>
-
     <div class="col-sm-6 col-xl-3">
         <div class="card border-0 shadow-sm rounded-3 bg-white border-start border-info border-4">
             <div class="card-body">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
-                        <span class="text-muted text-uppercase fw-semibold small">Promedio General</span>
-                        <h3 class="fw-bold text-info mt-1 mb-0">@Model.PromedioGeneral</h3>
+                        <span class="text-muted text-uppercase fw-semibold small">Promedio</span>
+                        <h3 class="fw-bold text-info mt-1 mb-0" id="cardPromedio">0.0</h3>
                     </div>
                     <div class="bg-info bg-opacity-10 text-info p-3 rounded-circle">
                         <i class="bi bi-graph-up-arrow fs-4"></i>
@@ -79,13 +80,13 @@
         </div>
     </div>
 </div>
-
-<!-- Tabla de Vista Rápida del Dashboard -->
+<!-- Tabla de Registros CRUD -->
 <div class="card border-0 shadow-sm rounded-3">
-    <div class="card-header bg-white py-3 border-0">
+    <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
         <h5 class="fw-bold text-dark mb-0">
-            <i class="bi bi-list-check me-2"></i>Estudiantes Registrados Recientemente
+            <i class="bi bi-table me-2"></i>Listado de Estudiantes
         </h5>
+        <span class="badge bg-primary bg-opacity-10 text-primary">Base de Datos en Tiempo Real</span>
     </div>
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
@@ -96,33 +97,152 @@
                     <th>Carrera</th>
                     <th>Calificación</th>
                     <th>Estado</th>
+                    <th>Fecha Registro</th>
+                    <th class="text-center">Acciones</th>
                 </tr>
             </thead>
-            <tbody>
-                @foreach (var est in Model.EstudiantesRecientes)
-                {
-                    <tr>
-                        <td class="fw-semibold">@est.Matricula</td>
-                        <td>@est.Nombre</td>
-                        <td><span class="badge bg-secondary">@est.Carrera</span></td>
-                        <td class="fw-bold">@est.Calificacion</td>
-                        <td>
-                            @if (est.Calificacion >= 70)
-                            {
-                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
-                                    <i class="bi bi-check2 me-1"></i>Aprobado
-                                </span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">
-                                    <i class="bi bi-x-circle me-1"></i>Reprobado
-                                </span>
-                            }
-                        </td>
-                    </tr>
-                }
+            <tbody id="tablaEstudiantes">
+                <!-- Se llena dinámicamente con JavaScript desde la API -->
             </tbody>
         </table>
     </div>
 </div>
+<!-- Modal para Crear / Editar Estudiante -->
+<div class="modal fade" id="modalEstudiante" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold" id="modalTitulo">Registrar Estudiante</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body p-4">
+                <input type="hidden" id="estudianteId" value="0" />
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Matrícula:</label>
+                    <input type="text" class="form-control" id="txtMatricula" placeholder="Ej: 2024-1234" required />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Nombre Completo:</label>
+                    <input type="text" class="form-control" id="txtNombre" placeholder="Nombre y Apellido" required />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Carrera:</label>
+                    <select class="form-select" id="slcCarrera">
+                        <option value="Desarrollo de Software">Desarrollo de Software</option>
+                        <option value="Ciberseguridad">Ciberseguridad</option>
+                        <option value="Redes de Información">Redes de Información</option>
+                        <option value="Inteligencia Artificial">Inteligencia Artificial</option>
+                        <option value="Mecatrónica">Mecatrónica</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Calificación (0 - 100):</label>
+                    <input type="number" class="form-control" id="txtCalificacion" min="0" max="100" placeholder="0 - 100" required />
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary px-4" onclick="guardarEstudiante()">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+<script>
+    let modalInstance = null;
+    document.addEventListener("DOMContentLoaded", () => {
+        modalInstance = new bootstrap.Modal(document.getElementById('modalEstudiante'));
+        cargarEstudiantes();
+    });
+    async function cargarEstudiantes() {
+        const res = await fetch('/api/estudiantes');
+        const estudiantes = await res.json();
+        const tbody = document.getElementById('tablaEstudiantes');
+        tbody.innerHTML = '';
+        let aprobados = 0;
+        let reprobados = 0;
+        let sumaNotas = 0;
+        estudiantes.forEach(e => {
+            if (e.calificacion >= 70) aprobados++; else reprobados++;
+            sumaNotas += e.calificacion;
+            const estadoBadge = e.calificacion >= 70
+                ? `<span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-check-circle me-1"></i>Aprobado</span>`
+                : `<span class="badge bg-danger-subtle text-danger border border-danger-subtle"><i class="bi bi-x-circle me-1"></i>Reprobado</span>`;
+            tbody.innerHTML += `
+                <tr>
+                    <td class="fw-semibold text-primary">${e.matricula}</td>
+                    <td>${e.nombre}</td>
+                    <td><span class="badge bg-secondary">${e.carrera}</span></td>
+                    <td class="fw-bold">${e.calificacion}</td>
+                    <td>${estadoBadge}</td>
+                    <td class="text-muted small">${new Date(e.fechaRegistro).toLocaleDateString()}</td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-outline-warning me-1" onclick="abrirModalEditar(${e.id})">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="eliminarEstudiante(${e.id})">
+                            <i class="bi bi-trash-fill"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+        document.getElementById('cardTotal').innerText = estudiantes.length;
+        document.getElementById('cardAprobados').innerText = aprobados;
+        document.getElementById('cardReprobados').innerText = reprobados;
+        document.getElementById('cardPromedio').innerText = estudiantes.length > 0 
+            ? (sumaNotas / estudiantes.length).toFixed(1) 
+            : '0.0';
+    }
+    function abrirModalCrear() {
+        document.getElementById('modalTitulo').innerText = 'Registrar Nuevo Estudiante';
+        document.getElementById('estudianteId').value = '0';
+        document.getElementById('txtMatricula').value = '';
+        document.getElementById('txtNombre').value = '';
+        document.getElementById('txtCalificacion').value = '';
+        modalInstance.show();
+    }
+    async function abrirModalEditar(id) {
+        const res = await fetch(`/api/estudiantes/${id}`);
+        if (!res.ok) return;
+        const e = await res.json();
+        document.getElementById('modalTitulo').innerText = 'Editar Datos de Estudiante';
+        document.getElementById('estudianteId').value = e.id;
+        document.getElementById('txtMatricula').value = e.matricula;
+        document.getElementById('txtNombre').value = e.nombre;
+        document.getElementById('slcCarrera').value = e.carrera;
+        document.getElementById('txtCalificacion').value = e.calificacion;
+        modalInstance.show();
+    }
+    async function guardarEstudiante() {
+        const id = parseInt(document.getElementById('estudianteId').value);
+        const estudiante = {
+            id: id,
+            matricula: document.getElementById('txtMatricula').value,
+            nombre: document.getElementById('txtNombre').value,
+            carrera: document.getElementById('slcCarrera').value,
+            calificacion: parseFloat(document.getElementById('txtCalificacion').value) || 0
+        };
+        if (id === 0) {
+            await fetch('/api/estudiantes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(estudiante)
+            });
+        } else {
+            await fetch(`/api/estudiantes/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(estudiante)
+            });
+        }
+        modalInstance.hide();
+        await cargarEstudiantes();
+    }
+    async function eliminarEstudiante(id) {
+        if (!confirm('¿Estás seguro de que deseas eliminar este estudiante?')) return;
+        await fetch(`/api/estudiantes/${id}`, { method: 'DELETE' });
+        await cargarEstudiantes();
+    }
+</script>
+}
