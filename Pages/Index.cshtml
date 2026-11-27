@@ -113,18 +113,29 @@
     </div>
 </div>
 
-<!-- Tabla de Registros CRUD con Ordenamiento de Columnas -->
+<!-- Tabla de Registros CRUD con Selección Múltiple y Ordenamiento -->
 <div class="card border-0 shadow-sm rounded-3">
-    <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
-        <h5 class="fw-bold text-dark mb-0">
-            <i class="bi bi-table me-2"></i>Listado de Estudiantes
-        </h5>
-        <span class="badge bg-primary bg-opacity-10 text-primary">Haz clic en los encabezados para ordenar</span>
+    <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+            <h5 class="fw-bold text-dark mb-0">
+                <i class="bi bi-table me-2"></i>Listado de Estudiantes
+            </h5>
+            <span class="badge bg-primary bg-opacity-10 text-primary">Haz clic en los encabezados para ordenar</span>
+        </div>
+        <div>
+            <!-- Botón de Eliminación Múltiple (feature/batch-delete-selection) -->
+            <button id="btnEliminarLote" class="btn btn-outline-danger btn-sm d-none" onclick="eliminarLote()">
+                <i class="bi bi-trash3-fill me-1"></i>Eliminar seleccionados (<span id="cantSeleccionados">0</span>)
+            </button>
+        </div>
     </div>
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
                 <tr>
+                    <th style="width: 40px;" class="text-center">
+                        <input type="checkbox" class="form-check-input" id="checkTodos" onchange="toggleSeleccionarTodos(this)" title="Seleccionar todos" />
+                    </th>
                     <th style="cursor: pointer;" onclick="ordenarPorColumna('matricula')">
                         Matrícula <i class="bi bi-arrow-down-up text-muted ms-1" id="icono-matricula"></i>
                     </th>
@@ -227,6 +238,9 @@
 
             tbody.innerHTML += `
                 <tr>
+                    <td class="text-center">
+                        <input type="checkbox" class="form-check-input check-estudiante" value="${e.id}" onchange="actualizarSeleccionados()" />
+                    </td>
                     <td class="fw-semibold text-primary">${e.matricula}</td>
                     <td>${e.nombre}</td>
                     <td><span class="badge bg-secondary">${e.carrera}</span></td>
@@ -252,7 +266,53 @@
             ? (sumaNotas / estudiantes.length).toFixed(1) 
             : '0.0';
 
+        actualizarSeleccionados();
         filtrarTabla();
+    }
+
+    // Funciones de Selección y Eliminación Múltiple (feature/batch-delete-selection)
+    function toggleSeleccionarTodos(masterCheckbox) {
+        const checkboxes = document.querySelectorAll('.check-estudiante');
+        checkboxes.forEach(cb => cb.checked = masterCheckbox.checked);
+        actualizarSeleccionados();
+    }
+
+    function actualizarSeleccionados() {
+        const seleccionados = document.querySelectorAll('.check-estudiante:checked');
+        const total = document.querySelectorAll('.check-estudiante');
+        const btnEliminar = document.getElementById('btnEliminarLote');
+        const contador = document.getElementById('cantSeleccionados');
+        const checkTodos = document.getElementById('checkTodos');
+
+        if (contador) contador.innerText = seleccionados.length;
+
+        if (btnEliminar) {
+            if (seleccionados.length > 0) {
+                btnEliminar.classList.remove('d-none');
+            } else {
+                btnEliminar.classList.add('d-none');
+            }
+        }
+
+        if (checkTodos && total.length > 0) {
+            checkTodos.checked = (seleccionados.length === total.length);
+        }
+    }
+
+    async function eliminarLote() {
+        const seleccionados = Array.from(document.querySelectorAll('.check-estudiante:checked')).map(cb => parseInt(cb.value));
+        if (seleccionados.length === 0) return;
+
+        if (!confirm(`Confirmacion: Se eliminaran ${seleccionados.length} estudiantes seleccionados. Desea continuar?`)) return;
+
+        for (const id of seleccionados) {
+            await fetch(`/api/estudiantes/${id}`, { method: 'DELETE' });
+        }
+
+        const checkTodos = document.getElementById('checkTodos');
+        if (checkTodos) checkTodos.checked = false;
+
+        await cargarEstudiantes();
     }
 
     // Función para ordenar por cualquier columna
@@ -269,7 +329,7 @@
         listaEstudiantes.sort((a, b) => {
             if (columna === 'calificacion') return (a.calificacion - b.calificacion) * factor;
             if (columna === 'fecha') return (new Date(a.fechaRegistro) - new Date(b.fechaRegistro)) * factor;
-            return a[columna].localeCompare(b[columna]) * factor;
+            return (a[columna] || '').localeCompare(b[columna] || '') * factor;
         });
 
         renderizarTabla(listaEstudiantes);
@@ -306,19 +366,19 @@
         const calificacionStr = document.getElementById('txtCalificacion').value.trim();
 
         if (!matricula || !nombre || calificacionStr === '') {
-            alert('⚠️ Error: Todos los campos son obligatorios.');
+            alert('Error: Todos los campos son obligatorios.');
             return;
         }
 
         const regexMatricula = /^[0-9]{4}-[0-9]{4}$/;
         if (!regexMatricula.test(matricula)) {
-            alert('⚠️ Error de formato: La matrícula debe tener el formato AAAA-NNNN (Ejemplo: 2024-1234).');
+            alert('Error de formato: La matricula debe tener el formato AAAA-NNNN (Ejemplo: 2024-1234).');
             return;
         }
 
         const calificacion = parseFloat(calificacionStr);
         if (isNaN(calificacion) || calificacion < 0 || calificacion > 100) {
-            alert('⚠️ Error de rango: La calificación debe ser un número entre 0 y 100.');
+            alert('Error de rango: La calificacion debe ser un numero entre 0 y 100.');
             return;
         }
 
@@ -346,11 +406,11 @@
 
         modalInstance.hide();
         await cargarEstudiantes();
-        alert('✅ Estudiante guardado exitosamente.');
+        alert('Estudiante guardado exitosamente.');
     }
 
     async function eliminarEstudiante(id) {
-        if (!confirm('¿Estás seguro de que deseas eliminar este estudiante?')) return;
+        if (!confirm('Confirmacion: Desea eliminar este estudiante?')) return;
         await fetch(`/api/estudiantes/${id}`, { method: 'DELETE' });
         await cargarEstudiantes();
     }
@@ -361,9 +421,9 @@
         const filas = document.querySelectorAll('#tablaEstudiantes tr');
 
         filas.forEach(fila => {
-            const matricula = fila.children[0]?.innerText.toLowerCase() || '';
-            const nombre = fila.children[1]?.innerText.toLowerCase() || '';
-            const carreraFila = fila.children[2]?.innerText.toLowerCase() || '';
+            const matricula = fila.children[1]?.innerText.toLowerCase() || '';
+            const nombre = fila.children[2]?.innerText.toLowerCase() || '';
+            const carreraFila = fila.children[3]?.innerText.toLowerCase() || '';
 
             const coincideTexto = matricula.includes(texto) || nombre.includes(texto);
             const coincideCarrera = carrera === '' || carreraFila.includes(carrera);
