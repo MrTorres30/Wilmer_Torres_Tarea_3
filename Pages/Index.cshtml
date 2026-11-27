@@ -113,24 +113,34 @@
     </div>
 </div>
 
-<!-- Tabla de Registros CRUD -->
+<!-- Tabla de Registros CRUD con Ordenamiento de Columnas -->
 <div class="card border-0 shadow-sm rounded-3">
     <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
         <h5 class="fw-bold text-dark mb-0">
             <i class="bi bi-table me-2"></i>Listado de Estudiantes
         </h5>
-        <span class="badge bg-primary bg-opacity-10 text-primary">Base de Datos en Tiempo Real</span>
+        <span class="badge bg-primary bg-opacity-10 text-primary">Haz clic en los encabezados para ordenar</span>
     </div>
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
                 <tr>
-                    <th>Matrícula</th>
-                    <th>Nombre Completo</th>
-                    <th>Carrera</th>
-                    <th>Calificación</th>
+                    <th style="cursor: pointer;" onclick="ordenarPorColumna('matricula')">
+                        Matrícula <i class="bi bi-arrow-down-up text-muted ms-1" id="icono-matricula"></i>
+                    </th>
+                    <th style="cursor: pointer;" onclick="ordenarPorColumna('nombre')">
+                        Nombre Completo <i class="bi bi-arrow-down-up text-muted ms-1" id="icono-nombre"></i>
+                    </th>
+                    <th style="cursor: pointer;" onclick="ordenarPorColumna('carrera')">
+                        Carrera <i class="bi bi-arrow-down-up text-muted ms-1" id="icono-carrera"></i>
+                    </th>
+                    <th style="cursor: pointer;" onclick="ordenarPorColumna('calificacion')">
+                        Calificación <i class="bi bi-arrow-down-up text-muted ms-1" id="icono-calificacion"></i>
+                    </th>
                     <th>Estado</th>
-                    <th>Fecha Registro</th>
+                    <th style="cursor: pointer;" onclick="ordenarPorColumna('fecha')">
+                        Fecha Registro <i class="bi bi-arrow-down-up text-muted ms-1" id="icono-fecha"></i>
+                    </th>
                     <th class="text-center">Acciones</th>
                 </tr>
             </thead>
@@ -185,6 +195,8 @@
 @section Scripts {
 <script>
     let modalInstance = null;
+    let listaEstudiantes = [];
+    let ordenActual = { columna: '', ascendente: true };
 
     document.addEventListener("DOMContentLoaded", () => {
         modalInstance = new bootstrap.Modal(document.getElementById('modalEstudiante'));
@@ -193,7 +205,11 @@
 
     async function cargarEstudiantes() {
         const res = await fetch('/api/estudiantes');
-        const estudiantes = await res.json();
+        listaEstudiantes = await res.json();
+        renderizarTabla(listaEstudiantes);
+    }
+
+    function renderizarTabla(estudiantes) {
         const tbody = document.getElementById('tablaEstudiantes');
         tbody.innerHTML = '';
 
@@ -239,6 +255,26 @@
         filtrarTabla();
     }
 
+    // Función para ordenar por cualquier columna
+    function ordenarPorColumna(columna) {
+        if (ordenActual.columna === columna) {
+            ordenActual.ascendente = !ordenActual.ascendente;
+        } else {
+            ordenActual.columna = columna;
+            ordenActual.ascendente = true;
+        }
+
+        const factor = ordenActual.ascendente ? 1 : -1;
+
+        listaEstudiantes.sort((a, b) => {
+            if (columna === 'calificacion') return (a.calificacion - b.calificacion) * factor;
+            if (columna === 'fecha') return (new Date(a.fechaRegistro) - new Date(b.fechaRegistro)) * factor;
+            return a[columna].localeCompare(b[columna]) * factor;
+        });
+
+        renderizarTabla(listaEstudiantes);
+    }
+
     function abrirModalCrear() {
         document.getElementById('modalTitulo').innerText = 'Registrar Nuevo Estudiante';
         document.getElementById('estudianteId').value = '0';
@@ -269,20 +305,17 @@
         const carrera = document.getElementById('slcCarrera').value;
         const calificacionStr = document.getElementById('txtCalificacion').value.trim();
 
-        // VALIDACIÓN 1: Campos obligatorios
         if (!matricula || !nombre || calificacionStr === '') {
             alert('⚠️ Error: Todos los campos son obligatorios.');
             return;
         }
 
-        // VALIDACIÓN 2: Formato de Matrícula (AAAA-NNNN)
         const regexMatricula = /^[0-9]{4}-[0-9]{4}$/;
         if (!regexMatricula.test(matricula)) {
             alert('⚠️ Error de formato: La matrícula debe tener el formato AAAA-NNNN (Ejemplo: 2024-1234).');
             return;
         }
 
-        // VALIDACIÓN 3: Rango de Calificación (0 a 100)
         const calificacion = parseFloat(calificacionStr);
         if (isNaN(calificacion) || calificacion < 0 || calificacion > 100) {
             alert('⚠️ Error de rango: La calificación debe ser un número entre 0 y 100.');
