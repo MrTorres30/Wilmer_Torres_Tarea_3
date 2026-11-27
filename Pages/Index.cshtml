@@ -202,6 +202,7 @@
         document.getElementById('txtCalificacion').value = '';
         modalInstance.show();
     }
+    
     async function abrirModalEditar(id) {
         const res = await fetch(`/api/estudiantes/${id}`);
         if (!res.ok) return;
@@ -214,14 +215,35 @@
         document.getElementById('txtCalificacion').value = e.calificacion;
         modalInstance.show();
     }
-    async function guardarEstudiante() {
+     async function guardarEstudiante() {
         const id = parseInt(document.getElementById('estudianteId').value);
+        const matricula = document.getElementById('txtMatricula').value.trim();
+        const nombre = document.getElementById('txtNombre').value.trim();
+        const carrera = document.getElementById('slcCarrera').value;
+        const calificacionStr = document.getElementById('txtCalificacion').value.trim();
+        // VALIDACIÓN 1: Campos obligatorios
+        if (!matricula || !nombre || calificacionStr === '') {
+            alert(' Error: Todos los campos son obligatorios.');
+            return;
+        }
+        // VALIDACIÓN 2: Formato de Matrícula (ej: 2024-1234 o letras y números)
+        const regexMatricula = /^[0-9]{4}-[0-9]{4}$/;
+        if (!regexMatricula.test(matricula)) {
+            alert(' Error de formato: La matrícula debe tener el formato AAAA-NNNN (Ejemplo: 2024-1234).');
+            return;
+        }
+        // VALIDACIÓN 3: Rango de Calificación (0 a 100)
+        const calificacion = parseFloat(calificacionStr);
+        if (isNaN(calificacion) || calificacion < 0 || calificacion > 100) {
+            alert(' Error de rango: La calificación debe ser un número entre 0 y 100.');
+            return;
+        }
         const estudiante = {
             id: id,
-            matricula: document.getElementById('txtMatricula').value,
-            nombre: document.getElementById('txtNombre').value,
-            carrera: document.getElementById('slcCarrera').value,
-            calificacion: parseFloat(document.getElementById('txtCalificacion').value) || 0
+            matricula: matricula,
+            nombre: nombre,
+            carrera: carrera,
+            calificacion: calificacion
         };
         if (id === 0) {
             await fetch('/api/estudiantes', {
@@ -238,11 +260,7 @@
         }
         modalInstance.hide();
         await cargarEstudiantes();
-    }
-    async function eliminarEstudiante(id) {
-        if (!confirm('¿Estás seguro de que deseas eliminar este estudiante?')) return;
-        await fetch(`/api/estudiantes/${id}`, { method: 'DELETE' });
-        await cargarEstudiantes();
+        alert('Estudiante guardado exitosamente.');
     }
 </script>
 }
