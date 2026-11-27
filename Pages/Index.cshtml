@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = "Gestión de Estudiantes";
 }
+
 <!-- Encabezado con Botón de Acción -->
 <div class="row align-items-center mb-4">
     <div class="col-md-8">
@@ -17,6 +18,7 @@
         </button>
     </div>
 </div>
+
 <!-- Tarjetas de Métricas Dinámicas -->
 <div class="row g-3 mb-4">
     <div class="col-sm-6 col-xl-3">
@@ -34,6 +36,7 @@
             </div>
         </div>
     </div>
+
     <div class="col-sm-6 col-xl-3">
         <div class="card border-0 shadow-sm rounded-3 bg-white border-start border-success border-4">
             <div class="card-body">
@@ -49,6 +52,7 @@
             </div>
         </div>
     </div>
+
     <div class="col-sm-6 col-xl-3">
         <div class="card border-0 shadow-sm rounded-3 bg-white border-start border-danger border-4">
             <div class="card-body">
@@ -64,6 +68,7 @@
             </div>
         </div>
     </div>
+
     <div class="col-sm-6 col-xl-3">
         <div class="card border-0 shadow-sm rounded-3 bg-white border-start border-info border-4">
             <div class="card-body">
@@ -80,6 +85,34 @@
         </div>
     </div>
 </div>
+
+<!-- Barra de Búsqueda y Filtros en tiempo real -->
+<div class="card border-0 shadow-sm rounded-3 p-3 mb-4 bg-white">
+    <div class="row g-2 align-items-center">
+        <div class="col-md-6">
+            <div class="input-group">
+                <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                <input type="text" id="txtBuscar" class="form-control border-start-0" placeholder="Buscar por nombre o matrícula..." onkeyup="filtrarTabla()" />
+            </div>
+        </div>
+        <div class="col-md-4">
+            <select id="filtroCarrera" class="form-select" onchange="filtrarTabla()">
+                <option value="">Todas las Carreras</option>
+                <option value="Desarrollo de Software">Desarrollo de Software</option>
+                <option value="Ciberseguridad">Ciberseguridad</option>
+                <option value="Redes de Información">Redes de Información</option>
+                <option value="Inteligencia Artificial">Inteligencia Artificial</option>
+                <option value="Mecatrónica">Mecatrónica</option>
+            </select>
+        </div>
+        <div class="col-md-2 text-end">
+            <button class="btn btn-outline-secondary w-100" onclick="limpiarFiltros()">
+                <i class="bi bi-arrow-counterclockwise me-1"></i>Limpiar
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- Tabla de Registros CRUD -->
 <div class="card border-0 shadow-sm rounded-3">
     <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
@@ -107,6 +140,7 @@
         </table>
     </div>
 </div>
+
 <!-- Modal para Crear / Editar Estudiante -->
 <div class="modal fade" id="modalEstudiante" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -147,27 +181,34 @@
         </div>
     </div>
 </div>
+
 @section Scripts {
 <script>
     let modalInstance = null;
+
     document.addEventListener("DOMContentLoaded", () => {
         modalInstance = new bootstrap.Modal(document.getElementById('modalEstudiante'));
         cargarEstudiantes();
     });
+
     async function cargarEstudiantes() {
         const res = await fetch('/api/estudiantes');
         const estudiantes = await res.json();
         const tbody = document.getElementById('tablaEstudiantes');
         tbody.innerHTML = '';
+
         let aprobados = 0;
         let reprobados = 0;
         let sumaNotas = 0;
+
         estudiantes.forEach(e => {
             if (e.calificacion >= 70) aprobados++; else reprobados++;
             sumaNotas += e.calificacion;
+
             const estadoBadge = e.calificacion >= 70
                 ? `<span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-check-circle me-1"></i>Aprobado</span>`
                 : `<span class="badge bg-danger-subtle text-danger border border-danger-subtle"><i class="bi bi-x-circle me-1"></i>Reprobado</span>`;
+
             tbody.innerHTML += `
                 <tr>
                     <td class="fw-semibold text-primary">${e.matricula}</td>
@@ -177,23 +218,27 @@
                     <td>${estadoBadge}</td>
                     <td class="text-muted small">${new Date(e.fechaRegistro).toLocaleDateString()}</td>
                     <td class="text-center">
-                        <button class="btn btn-sm btn-outline-warning me-1" onclick="abrirModalEditar(${e.id})">
+                        <button class="btn btn-sm btn-outline-warning me-1" onclick="abrirModalEditar(${e.id})" title="Editar">
                             <i class="bi bi-pencil-square"></i>
                         </button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="eliminarEstudiante(${e.id})">
+                        <button class="btn btn-sm btn-outline-danger" onclick="eliminarEstudiante(${e.id})" title="Eliminar">
                             <i class="bi bi-trash-fill"></i>
                         </button>
                     </td>
                 </tr>
             `;
         });
+
         document.getElementById('cardTotal').innerText = estudiantes.length;
         document.getElementById('cardAprobados').innerText = aprobados;
         document.getElementById('cardReprobados').innerText = reprobados;
         document.getElementById('cardPromedio').innerText = estudiantes.length > 0 
             ? (sumaNotas / estudiantes.length).toFixed(1) 
             : '0.0';
+
+        filtrarTabla();
     }
+
     function abrirModalCrear() {
         document.getElementById('modalTitulo').innerText = 'Registrar Nuevo Estudiante';
         document.getElementById('estudianteId').value = '0';
@@ -202,11 +247,12 @@
         document.getElementById('txtCalificacion').value = '';
         modalInstance.show();
     }
-    
+
     async function abrirModalEditar(id) {
         const res = await fetch(`/api/estudiantes/${id}`);
         if (!res.ok) return;
         const e = await res.json();
+
         document.getElementById('modalTitulo').innerText = 'Editar Datos de Estudiante';
         document.getElementById('estudianteId').value = e.id;
         document.getElementById('txtMatricula').value = e.matricula;
@@ -215,29 +261,34 @@
         document.getElementById('txtCalificacion').value = e.calificacion;
         modalInstance.show();
     }
-     async function guardarEstudiante() {
+
+    async function guardarEstudiante() {
         const id = parseInt(document.getElementById('estudianteId').value);
         const matricula = document.getElementById('txtMatricula').value.trim();
         const nombre = document.getElementById('txtNombre').value.trim();
         const carrera = document.getElementById('slcCarrera').value;
         const calificacionStr = document.getElementById('txtCalificacion').value.trim();
+
         // VALIDACIÓN 1: Campos obligatorios
         if (!matricula || !nombre || calificacionStr === '') {
-            alert(' Error: Todos los campos son obligatorios.');
+            alert('⚠️ Error: Todos los campos son obligatorios.');
             return;
         }
-        // VALIDACIÓN 2: Formato de Matrícula (ej: 2024-1234 o letras y números)
+
+        // VALIDACIÓN 2: Formato de Matrícula (AAAA-NNNN)
         const regexMatricula = /^[0-9]{4}-[0-9]{4}$/;
         if (!regexMatricula.test(matricula)) {
-            alert(' Error de formato: La matrícula debe tener el formato AAAA-NNNN (Ejemplo: 2024-1234).');
+            alert('⚠️ Error de formato: La matrícula debe tener el formato AAAA-NNNN (Ejemplo: 2024-1234).');
             return;
         }
+
         // VALIDACIÓN 3: Rango de Calificación (0 a 100)
         const calificacion = parseFloat(calificacionStr);
         if (isNaN(calificacion) || calificacion < 0 || calificacion > 100) {
-            alert(' Error de rango: La calificación debe ser un número entre 0 y 100.');
+            alert('⚠️ Error de rango: La calificación debe ser un número entre 0 y 100.');
             return;
         }
+
         const estudiante = {
             id: id,
             matricula: matricula,
@@ -245,6 +296,7 @@
             carrera: carrera,
             calificacion: calificacion
         };
+
         if (id === 0) {
             await fetch('/api/estudiantes', {
                 method: 'POST',
@@ -258,9 +310,45 @@
                 body: JSON.stringify(estudiante)
             });
         }
+
         modalInstance.hide();
         await cargarEstudiantes();
-        alert('Estudiante guardado exitosamente.');
+        alert('✅ Estudiante guardado exitosamente.');
+    }
+
+    async function eliminarEstudiante(id) {
+        if (!confirm('¿Estás seguro de que deseas eliminar este estudiante?')) return;
+        await fetch(`/api/estudiantes/${id}`, { method: 'DELETE' });
+        await cargarEstudiantes();
+    }
+
+    function filtrarTabla() {
+        const texto = (document.getElementById('txtBuscar')?.value || '').toLowerCase();
+        const carrera = (document.getElementById('filtroCarrera')?.value || '').toLowerCase();
+        const filas = document.querySelectorAll('#tablaEstudiantes tr');
+
+        filas.forEach(fila => {
+            const matricula = fila.children[0]?.innerText.toLowerCase() || '';
+            const nombre = fila.children[1]?.innerText.toLowerCase() || '';
+            const carreraFila = fila.children[2]?.innerText.toLowerCase() || '';
+
+            const coincideTexto = matricula.includes(texto) || nombre.includes(texto);
+            const coincideCarrera = carrera === '' || carreraFila.includes(carrera);
+
+            if (coincideTexto && coincideCarrera) {
+                fila.style.display = '';
+            } else {
+                fila.style.display = 'none';
+            }
+        });
+    }
+
+    function limpiarFiltros() {
+        const txtBuscar = document.getElementById('txtBuscar');
+        const filtroCarrera = document.getElementById('filtroCarrera');
+        if (txtBuscar) txtBuscar.value = '';
+        if (filtroCarrera) filtroCarrera.value = '';
+        filtrarTabla();
     }
 </script>
 }
